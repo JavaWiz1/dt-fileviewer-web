@@ -1,0 +1,33 @@
+{# templates/system.html #}
+
+{% extends "base.html" %}
+
+{% block content %}
+
+<!-- <div class="my-4 px-3 border shadow-sm"> -->
+<div class="my-3 px-5">
+    <table class="table table-hover table-bordered caption-top">
+        <caption>
+            <h3>System attributes for {{ appinfo.host_fqdn }}</h3>
+        </caption>
+    <thead>
+            <tr>
+                <th scope="col">Key</th>
+                <th scope="col">Value</th>
+            </tr>
+        </thead>
+        <tbody class="table-group-divider">
+            {% for key, value in appinfo.items() %}
+            {% if not key.startswith('_') %}
+            <tr>
+                <td><strong>{{ key }}</strong></td>
+                <td>{{ value }}</td>
+            </tr>
+            {% endif %}
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<script src="/static/js/system.js"></script>
+
+{% endblock content %}

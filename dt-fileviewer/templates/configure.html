@@ -1,0 +1,72 @@
+{# templates/config_required.html #}
+
+{% extends "base.html" %}
+
+{% block content %}
+<script>
+    var errors = {{ errors | tojson }};
+</script>
+
+<label id="valid_log" hidden>{{ appinfo._valid_file_name }}</label>
+
+<form id="configuration_form" method="post" action="/configure" class="my-3 px-5"
+    onsubmit="validate_form(event);">
+    <div>
+        <table class="table table-striped table-bordered caption-top">
+            <caption>
+                <h3>List of viewable files</h3>
+            </caption>
+            <thead>
+                <tr>
+                    <th scope="col" class="text-center col-1">Del</th>
+                    <th scope="col" class="col-2">File ID</th>
+                    <th scope="col">Location</th>
+                </tr>
+            </thead>
+            <tbody class="table-group-divider">
+                {% for file_id, file_loc in appinfo._textfiles.items() %}
+                {% if file_id != 'not_selected' %}
+                <tr>
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input" id="del_{{ file_id }}_check"
+                            name="del_{{ file_id }}_check" value="" aria-label="del_{{ file_id }}_check">
+                    </td>
+                    <td id="upd_{{ file_id }}_fileid" name="upd_{{ file_id }}_fileid">{{ file_id }}</td>
+                    <td><input type="text" class="form-control" id="upd_{{ file_id }}_fileloc"
+                            name="upd_{{ file_id }}_fileloc" value="{{ file_loc }}" aria-label="upd_{{ file_id }}_fileloc">
+                        <div class="invalid-feedback" id="upd_{{ file_id }}_fileloc_feedback"></div>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+                    <tr>
+                        <div class="form-group">
+                            <td class="text-center">Add</td>
+                        <td>
+                            <input type="text" class="form-control" name="add_fileid" id="add_fileid">
+                            <div class="invalid-feedback" id="add_fileid_feedback"></div>
+                        </td>
+                        <td>
+                            <input type="text" class="form-control" name="add_fileloc" id="add_fileloc">
+                            <div class="invalid-feedback" id="add_fileloc_feedback"></div>
+                        </td>
+                        </div>
+                    </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-grid gap-2">
+        <input type="submit" class="btn btn-primary" value="Submit" id="submit_form">
+    </div>
+</form>
+
+{% if not appinfo._textfiles_defined %}
+<h3 class="my-1 text-danger text-center">Application configuration required.</h3>
+<div class="mb-1 text-center">
+    At least 1 log file must be defined.
+</div>
+{% endif %}
+
+<script src="/static/js/configure.js"></script>
+{% endblock content %}

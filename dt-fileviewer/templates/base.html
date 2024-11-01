@@ -1,0 +1,40 @@
+{# templates/base.html #}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>dt-fileviewer - system logfile viewer</title>
+    <!-- Favicon-->
+    <link rel="icon" type="image/x-icon" href="/static/assets/favicon.svg" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="/static/css/styles.css" rel="stylesheet" />
+</head>
+
+<body>
+    <div class="d-flex" id="wrapper">
+        <!-- Page content wrapper -->
+        <div id="page-content-wrapper">
+            <!-- Top navigatio n-->
+            {% include "/top_navbar.html" %}
+
+            <div id="page-content-wrapper">
+                <!-- Page content-->
+                <div class="container-fluid">
+                    {% block content %}
+                    <h1>Welcome to {{ title }}!</h1>
+                    {% endblock content %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Bootstrap core JS-->
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
