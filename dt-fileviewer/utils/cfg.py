@@ -3,10 +3,19 @@ import pathlib
 import sys
 from typing import Tuple, Dict
 
+import dt_tools.net.net_helper as nh
 import dt_tools.logger.logging_helper as lh
 from loguru import logger as LOGGER
 
 TEXTFILES_SECTION = 'TEXTFILES'
+
+def _get_open_port(low_port: int, high_port: int) -> int:
+    for target_port in range(low_port, high_port+1):
+        if nh.is_port_open('localhost', target_port):
+            return target_port
+        
+    LOGGER.error(f'Unable to locate open port in the range {low_port}->{high_port}')
+    return low_port
 
 def _get_textfile_section() -> Dict:
     from utils.helper import Helper
@@ -130,7 +139,7 @@ _KEYWORD_SECTIONS = {
 # ========================================================================================
 # When adding variable, also add to _KEYWORD_SECTIONS
 bind_host   = _CONFIG.get(_get_section_desc('bind_host')[0],      "bind_host", fallback='0.0.0.0')
-listen_port = _CONFIG.getint(_get_section_desc('listen_port')[0], "listen_port", fallback=8000)
+listen_port = _CONFIG.getint(_get_section_desc('listen_port')[0], "listen_port", fallback=_get_open_port(8000, 8100))
 auto_reload = _CONFIG.getboolean(_get_section_desc('auto_reload')[0], "auto_reload", fallback=False)
 num_workers = _CONFIG.getint(_get_section_desc('num_workers')[0], "num_workers", fallback=1) 
    
