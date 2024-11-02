@@ -4,30 +4,162 @@
 
 {% block content %}
 
+{% set cpu_info = appinfo.cpu %}
+{% set mem_info = appinfo.memory %}
+{% set disk_info = appinfo.disk %}
+
 <!-- <div class="my-4 px-3 border shadow-sm"> -->
 <div class="my-3 px-5">
-    <table class="table table-hover table-bordered caption-top">
-        <caption>
-            <h3>System attributes for {{ appinfo.host_fqdn }}</h3>
-        </caption>
-    <thead>
+    <h2>System Information for {{ appinfo.hostname }}</h2>
+
+    <!-- OS information -->
+    <table class="table table-info table-hover table-bordered caption-top mb-3">
+        <caption><h3>OS</h3></caption>
+        <tbody class="table-group-divider">
+            <!-- <tr><td>Title</td><td>{{ appinfo.xxx }}</td></tr> -->
+            <tr><td>Host</td>
+                <td>{{ appinfo.hostname }} - {{ appinfo.host_fqdn}} </td>
+            </tr>
             <tr>
-                <th scope="col">Key</th>
-                <th scope="col">Value</th>
+                <td></td>
+                <td>{{ appinfo.ip }}</td>
+            </tr>
+            <tr>
+                <td>Platform</td>
+                <td>{{ appinfo.platform }} - {{ appinfo.machine_type }}</td>
+            </tr>
+            <tr>
+                <td>OS</td>
+                <td>{{ appinfo.os }}</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>{{ appinfo.os_ver }}</td>
+            </tr>
+            <tr>
+                <td>Kernel</td><td>{{ appinfo.os_kernel }}</td>
+            </tr>
+            <tr>
+                <td>Boot Info</td><td>{{ appinfo.last_boot_time }}</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>{{ appinfo.uptime }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- CPU information -->
+    <table class="table table-info table-hover table-bordered caption-top mb-3">
+        <caption><h3>CPU</h3></caption>
+        <tbody class="table-group-divider">
+            <!-- <tr><td>Title</td><td>{{ appinfo.xxx }}</td></tr> -->
+            <tr>
+                <td>Processor</td>
+                <td>{{ cpu_info.processor }}</td>
+            </tr>
+            <tr>
+                <td>Cores</td>
+                <td>{{ cpu_info.cores_physical }} physical</td>
+            </tr>
+            <tr>
+                <td> </td>
+                <td>{{ cpu_info.cores_logical }} logical</td>
+            </tr>
+            <tr>
+                <td>Frequency</td>
+                <td>{{ cpu_info.freq_min }} - {{ cpu_info.freq_max }} MHz</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Memory information -->
+    <table class="table table-info table-hover table-bordered caption-top mb-3">
+        <caption><h3>Memory</h3></caption>
+        <thead>
+            <tr>
+                <th scope="col">Type</th>
+                <th scope="col">Total</th>
+                <th scope="col">Used</th>
+                <th scope="col">Free</th>
+                <th scope="col">% Used</th>
             </tr>
         </thead>
         <tbody class="table-group-divider">
-            {% for key, value in appinfo.items() %}
-            {% if not key.startswith('_') %}
+            <!-- <tr><td>Title</td><td>{{ appinfo.xxx }}</td></tr> -->
             <tr>
-                <td><strong>{{ key }}</strong></td>
-                <td>{{ value }}</td>
+                <td>Virtual</td>
+                <td>{{ mem_info.virtual_total }}</td>
+                <td>{{ mem_info.virtual_used }}</td>
+                <td>{{ mem_info.virtual_free }}</td>
+                <td>{{ mem_info.virtual_pct_used }}%</td>
             </tr>
-            {% endif %}
+            <tr>
+                <td>Swap</td>
+                <td>{{ mem_info.swap_total }}</td>
+                <td>{{ mem_info.swap_used }}</td>
+                <td>{{ mem_info.swap_free }}</td>
+                <td>{{ mem_info.swap_pct_used }}%</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Disk information  -->
+    <table class="table table-info table-hover table-bordered caption-top mb-3">
+        <caption><h3>Disk</h3></caption>
+        <thead>
+            <tr>
+                <th scope="col">Device</th>
+                <th scope="col">Type</th>
+                <th scope="col">Total</th>
+                <th scope="col">Used</th>
+                <th scope="col">Free</th>
+                <th scope="col">% Used</th>
+            </tr>
+        </thead>
+        <tbody class="table-group-divider">
+            <!-- <tr><td>Title</td><td>{{ appinfo.xxx }}</td></tr> -->
+             {% for d_entry in disk_info.partitions %}
+                {% set type  = d_entry.fstype if d_entry.fstype|length > 0 else d_entry.mount_opts %}
+                {% set total = d_entry.total  if d_entry.total is defined else '-' %}
+                {% set used  = d_entry.used   if d_entry.used  is defined else '-' %}
+                {% set free  = d_entry.free   if d_entry.free  is defined else '-' %}
+                {% set used_pct = d_entry.used_pct if d_entry.used_pct is defined else '-' %}
+                <tr>
+                    <td>{{ d_entry.device }}</td>
+                    <td>{{ type }}</td>
+                    <td>{{ total }}</td>
+                    <td>{{ used }}</td>
+                    <td>{{ free }}</td>
+                    <td>{{ used_pct }}%</td>
+                </tr>
             {% endfor %}
         </tbody>
     </table>
+<!-- 
+    LOGGER.info('')
+    LOGGER.success('Disk Info:')
+    print('  Device       Type            Total      Used       Free    % Used')
+    print('  ------------ ---------- ---------- ---------- ---------- --------')
+    for de in obj.disk.partitions:
+        # print(de)
+        total = '-'
+        used = '-'
+        free = '-'
+        used_pct = '-'
+        type = de.fstype if len(de.fstype) > 0 else de.mount_opts
+        if hasattr(de, 'total'):
+            total = OSHelper.bytes_to_printformat(de.total)
+            used = OSHelper.bytes_to_printformat(de.used)
+            free = OSHelper.bytes_to_printformat(de.free)
+            used_pct = f'{de.used_pct}%'
+        print(f'  {de.device:12} {type:10} {total:>10} {used:>10} {free:>10} {used_pct:>8}')
+     -->
+
+
 </div>
+
+
 <script src="/static/js/system.js"></script>
 
 {% endblock content %}

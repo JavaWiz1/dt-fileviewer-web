@@ -50,14 +50,37 @@ class Helper:
     def get_app_info(for_dialog: str = '') -> dict:
         LOGGER.trace(f'get_app_info("{for_dialog}")')
 
-        include_cpu = True if for_dialog == 'system' else False
+        include_cpu  = True if for_dialog in ['system'] else False
+        include_mem  = True if for_dialog in ['system'] else False
+        include_disk = True if for_dialog in ['system'] else False
 
-        sys_info = OSHelper.sysinfo(include_cpu=include_cpu)
+        sys_info = OSHelper.sysinfo(include_cpu=include_cpu, 
+                                    include_memory=include_mem,
+                                    include_disk=include_disk)
 
         app_info:dict = {}
         app_info = sys_info['system'].copy()
         if include_cpu:
-            app_info.update(sys_info['cpu'])
+            app_info['cpu']= sys_info['cpu']
+        if include_mem:
+            sys_info['memory']['virtual_total'] = OSHelper.bytes_to_printformat(sys_info['memory']['virtual_total'])
+            sys_info['memory']['virtual_used']  = OSHelper.bytes_to_printformat(sys_info['memory']['virtual_used'])
+            sys_info['memory']['virtual_free']  = OSHelper.bytes_to_printformat(sys_info['memory']['virtual_free'])
+            sys_info['memory']['swap_total'] = OSHelper.bytes_to_printformat(sys_info['memory']['swap_total'])
+            sys_info['memory']['swap_used']  = OSHelper.bytes_to_printformat(sys_info['memory']['swap_used'])
+            sys_info['memory']['swap_free']  = OSHelper.bytes_to_printformat(sys_info['memory']['swap_free'])
+            app_info['memory']= sys_info['memory']
+        if include_disk:
+            # for d_entry in sys_info["disk"]["partitions"]:
+            for idx in range(len(sys_info['disk']['partitions'])):
+                d_entry = sys_info['disk']['partitions'][idx]
+                LOGGER.warning(d_entry)
+                if len(d_entry['fstype']) > 0:
+                    d_entry['total'] = OSHelper.bytes_to_printformat(d_entry['total'])
+                    d_entry['used'] = OSHelper.bytes_to_printformat(d_entry['used'])
+                    d_entry['free'] = OSHelper.bytes_to_printformat(d_entry['free'])
+                LOGGER.warning(sys_info['disk']['partitions'][idx])
+            app_info['disk']= sys_info['disk']
         
         if Helper._UNKNOWN not in cfg.text_files.values():
             textfiles = {Helper._UNKNOWN_KEY: Helper._UNKNOWN}

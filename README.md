@@ -4,13 +4,19 @@ Python FastAPI web app used to view (text) files
 Tested on Windows, RaspPI OS and Ubuntu.
 
 # Purpose
-Self-contained FastAPI web application you can place on your target host to expose text (specifically log) files to brower clients. 
+Python FastAPI web application you can place on your target host to expose text (specifically log) files to brower clients. 
 
 This provides a quick way to view logs on target servers without ssh'ing to them to view the files.
 
-Written in Python, using FastAPI (web container) and Bootstrap v5.2.3 (html/css framework).
+# Features
+- Initializes basic configuration on 1st run.
+- Configuration UI to manage (add/mod/del) exposed log (i.e. text) file entries.
+- UI tails file when viewing.  
+- Displays host server information (name, ip, cpu info, memory info, ...)
 
 # Requires
+Written in Python, using FastAPI (web container) and Bootstrap v5.2.3 (html/css framework).
+
 - Python 3.10+
 - Poetry package manager
 
