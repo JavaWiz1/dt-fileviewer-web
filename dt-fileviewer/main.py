@@ -39,6 +39,10 @@ async def lifespan(app: FastAPI):
         for key, val in cfg.text_files.items():
             LOGGER.info(f'  {key:12} {val}')
 
+    # Only prints if debug is enabled.
+    LOGGER.debug('')
+    LOGGER.debug('DEBUG is enabled.')
+
     LOGGER.info('')
     LOGGER.info('Waiting for connection...')
     yield
@@ -53,6 +57,7 @@ app.include_router(routers.router)
 @app.middleware('http')
 async def middleware_hook(request: Request, call_next):
     if '/static/' not in request.url.path:
+        LOGGER.warning(request.url.path)
         params = '' if len(request.path_params) == 0 else request.path_params
         LOGGER.info(f'=> {request.client.host:13} [{request.method}] {request.url}  {request.query_params}  {params}')
 
@@ -64,8 +69,11 @@ async def middleware_hook(request: Request, call_next):
 # === Main Body
 # ==========================================================================================================
 if __name__ == "__main__":
+    console_ll = "DEBUG" if '-v' in sys.argv else cfg.console_ll
+    cfg.console_ll = console_ll
     h_console = lh.configure_logger(log_level=cfg.console_ll, log_format=cfg.console_format, brightness=False)  # noqa: F841
     h_infolog = lh.configure_logger(cfg.logfile, log_level=cfg.console_ll, log_format=cfg.file_format, rotation=cfg.rotation, retention=cfg.retention)  # noqa: F841
+    
     if '-c' in sys.argv:
         cfg.create_new_config()
     else:
@@ -77,6 +85,6 @@ if __name__ == "__main__":
                         workers=cfg.num_workers, 
                         proxy_headers=True,
                         forwarded_allow_ips='*',
-                        log_level=cfg.uvicorn_ll)
+                        log_level=cfg.uvicorn_ll.lower())
         except Exception as ex:
             LOGGER.exception(f'uvicorn exception: {ex}')

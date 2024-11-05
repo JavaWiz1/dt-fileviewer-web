@@ -8,10 +8,13 @@ Python FastAPI web application you can place on your target host to expose text 
 
 This provides a quick way to view logs on target servers without ssh'ing to them to view the files.
 
+## Caveats
+- Assumes files will be growing at the end.  If inserts or deletes, output not reliable.
+
 # Features
 - Initializes basic configuration on 1st run.
 - Configuration UI to manage (add/mod/del) exposed log (i.e. text) file entries.
-- UI tails file when viewing.  
+- UI tails file when viewing.
 - Displays host server information (name, ip, cpu info, memory info, ...)
 
 # Requires
@@ -35,3 +38,10 @@ In the form, add your files for viewing.
 
 - File ID is unique id string.
 - Location must be a valid location on the target server.
+
+
+# TODO
+- Document setup as a service
+- Ability to start tail at head (beginning), center or tail (end) of file.
+- Ability to provide filter text string, to limit output to only lines with the filter text value.
+- Ability to pause/un-pause tail function

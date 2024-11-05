@@ -1,53 +1,103 @@
 
-// const should_connect = document.getElementById('valid_log').textContent;
-const cbo_textfile = document.getElementById('cbo_text_filename');
-// const logfile_form = document.getElementById('logfile_form');
+const view_form     = document.getElementById('viewfile_form');
+const log_window = document.getElementById('log_window');
+const cbo_textfile  = document.getElementById('cbo_text_filename');
+const txt_filter    = document.getElementById('filter_text');
+const cbo_start_pos = document.getElementById('cbo_start_pos');
+const btn_submit    = document.getElementById('submit_button')
+const NULL_FILE     = 'not_selected'
 
 // Initial connection
-let ws_log = null
-let uri = '/ws/log/' + cbo_textfile.value;
-reconnectws_file('ws://' + window.location.host + uri)
-// let ws_log = new WebSocket("ws://" + window.location.host + "/ws/log/" + cbo_logfile.value);
+let ws_file_vw = null
+let base_uri = '/ws/view/'
+let uri = base_uri + cbo_textfile.value;
 
+// if (cbo_textfile.value == NULL_FILE) {
+//     console.log('No file selected, ignore request...')
+//     log_window.innerHTML = ''
+// } else {
+//     reconnectws_file('ws://' + window.location.host + uri)
+// }
+reconnectws_file('ws://' + window.location.host + uri)
+
+submit_button.addEventListener("click", (e) => {
+    e.preventDefault();
+
+    let text_file = cbo_textfile.value;
+    let uri = base_uri + text_file 
+    console.log('submit button clicked.  file: ' + text_file)
+
+    reconnectws_file("ws://" + window.location.host + uri);
+    // Disable submit_button
+    enable_button(btn_submit, false)
+  });
+  
 
 cbo_textfile.addEventListener("change", function () {
-    // Get the selected value
     const selected_value = this.value;
-    var log_window = document.getElementById('log_window')
-
-    // Do something with the selected value
-    let uri = '/ws/log/' + selected_value;
-    // Reconnect to a new endpoint
-    reconnectws_file("ws://" + window.location.host + uri);
-    log_window.innerHTML = "";
-
-}
-);
-
-function reconnectws_file(newEndpoint) {
-    console.log('Reconnectws_log()')
-    if (newEndpoint == 'DoesNotExist') {
-        console.log('[not_selected] endpoint.  Abandon')
-        return
+    console.log('cbo_textfile changed to ' + selected_value)
+    if (selected_value == NULL_FILE) {
+        enable_button(btn_submit, false);
+        uri = base_uri + cbo_textfile.value;
+        reconnectws_file('ws://' + window.location.host + uri);
+    } else {
+        enable_button(btn_submit, true);
     }
+});
 
-    if (ws_log) {
-        console.log("- readystate: " + ws_log.readyState)
-        if (ws_log.readyState !== ws_log.CLOSED) {
-            console.log('- Close current connection.')
-            ws_log.close(3001, "- Reconnect to " + newEndpoint + " requested.");
+function enable_button(btn, state) {
+    console.log('ENABLE ' + btn.id + ' ' + state)
+    let cls = btn.getAttribute('class');
+    console.log('- ' + cls)
+    if (state == true) {
+        // Enable - remove disabled attribute
+        cls = cls.replace('disabled', '');
+        btn.setAttribute('class', cls);
+    } else {
+        // Disable, add disabled attribute (if does not exist)
+        if (! cls.includes('disabled')) {
+            cls += ' disabled';
+            btn.setAttribute('class', cls);
         }
     }
+    console.log('- ' + cls)
+}
 
-    console.log('- Establish new connection: ' + newEndpoint)
-    ws_log = new WebSocket(newEndpoint);
+function reconnectws_file(newEndpoint) {
+    console.log('Reconnectws_file()');
+    log_window.innerHTML = 'Attempting to connect...'
+    if (newEndpoint == NULL_FILE) {
+        console.log('[' + NULL_FILE + '] endpoint.  Abandon');
+        ws_file_vw = null
+        return;
+    }
+    if (ws_file_vw) {
+        console.log("- readystate: " + ws_file_vw.readyState);
+        if (ws_file_vw.readyState !== ws_file_vw.CLOSED) {
+            console.log('- Close current connection.');
+            ws_file_vw.close(3001, "- Reconnect to " + newEndpoint + " requested.");
+        }
+    }
+    
+    console.log('- Establish new ws connection: ' + newEndpoint);
+    ws_file_vw = new WebSocket(newEndpoint);
+    log_window.innerHTML = ''
 
-    ws_log.onopen = () => {
-        console.log("ws_log connected to new endpoint: " + newEndpoint);
+    // ------------------------------------------------------------------------------------
+    ws_file_vw.onopen = () => {
+        console.log("Connected to new ws endpoint: " + newEndpoint);
         // Handle reconnection logic
     };
 
-    ws_log.onmessage = (event) => {
+    // ------------------------------------------------------------------------------------
+    ws_file_vw.onclose = (event) => {
+        console.log("ws_log closed: " + event);
+        // Implement reconnection logic if needed
+        log_window.innerHTML = ''
+    };
+
+    // ------------------------------------------------------------------------------------
+    ws_file_vw.onmessage = (event) => {
         console.log('ws_log onmessage ' + event.type)
         var log_window = document.getElementById('log_window')
         // Handle incoming messages
@@ -57,12 +107,9 @@ function reconnectws_file(newEndpoint) {
         log_window.scrollTop = log_window.scrollHeight;
     };
 
-    ws_log.onerror = (error) => {
-        console.error("ws_log error: " + error);
+    // ------------------------------------------------------------------------------------
+    ws_file_vw.onerror = (error) => {
+        console.error("ws_log error: " + error.type + '\nEvent: ' + event);
     };
 
-    ws_log.onclose = (event) => {
-        console.log("ws_log closed: " + event);
-        // Implement reconnection logic if needed
-    };
 }

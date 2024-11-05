@@ -7,23 +7,49 @@
 <label id="valid_log" hidden>{{ appinfo._valid_file_name }}</label>
 
 <div class="row my-4">
-    <form id="logfile_form" method="post" action="">
-        <div class="col">
-            <label for="cbo_text_filename" class="form-input-label" style="width: 5rem">Log file</label>
-            <select class="form-select-sm" id="cbo_text_filename" name="cbo_text_filename" aria-label="cbo_text_filename">
-                {% for text_file_id, text_file_name in appinfo._textfiles.items() %}
-                <option value="{{ text_file_id }}" {{ 'selected' if appinfo._selected_textfile_nm==text_file_name }}>
+    <form id="viewfile_form">
+        <div class="row">
+            <div class="col-2">
+                <label for="cbo_text_filename" class="form-input-label">File</label>
+                <select class="form-select-sm" id="cbo_text_filename" name="cbo_text_filename" aria-label="cbo_text_filename">
+                    {% for text_file_id, text_file_name in appinfo._textfiles.items() %}
+                    <option value="{{ text_file_id }}" {{ 'selected' if appinfo._selected_textfile_nm==text_file_name }}>
+                        {{ text_file_id }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-1">
+                <button type="submit" class="btn btn-primary disabled" id="submit_button">View</button>
+            </div>
+
+            <div class="col-2">
+                <label for="cbo_start_pos" class="form-input-label">Start</label>
+                <select class="form-select-sm" id="cbo_start_pos" name="cbo_start_pos" aria-label="cbo_start_pos">
+                    <option value="head">Head</option>
+                    <option value="center">Center</option>
+                    <option value="tail" selected>Tail</option>
+                    <!-- <option value="{{ text_file_id }}" {{ 'selected' if appinfo._selected_textfile_nm==text_file_name }}>
                     {{ text_file_name }}
-                </option>
-                {% endfor %}
-            </select>
+                    </option> -->
+                </select>
+            </div>
+
+            <div class="col">
+                <label for="filter_text" class="form-input-label">Filter</label>
+                <input type="text" class="form-control-sm" id="filter_text" name="filter_text" value=""
+                    aria-label="filter_text">
+                <div class="invalid-feedback" id="filter_text_feedback"></div>
+            </div>
+
         </div>
     </form>
 </div>
 
-<div id="log_window" 
-     class="container-fluid font-monospace mb-4 lh-1 fs-6 overflow-scroll bg-dark text-white text-nowrap"
-     style="width: 98vw; height: calc(100vh - 160px);">
+<div id="log_window"
+    class="container-fluid font-monospace mb-4 lh-1 fs-6 overflow-scroll bg-dark text-white text-nowrap"
+    style="width: 98vw; height: calc(100vh - 160px);">
     File content to be displayed here....
 </div>
 

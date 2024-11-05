@@ -3,6 +3,19 @@ from dt_tools.os.os_helper import OSHelper
 from loguru import logger as LOGGER
 from utils import cfg as cfg
 
+# class MessageCommand:
+#     OUTPUT = 'output'
+#     PAUSE  = 'pause'
+#     QUIT   = 'quit'
+
+# @dataclass
+# class Message():
+#     command: MessageCommand
+#     parm: str
+
+#     def to_dict(self) -> dict:
+#         return {'command': self.command, 'parm': self.parm}
+    
 
 class Helper:
     _UNKNOWN_KEY = 'not_selected'
@@ -18,11 +31,11 @@ class Helper:
     def filter_line(line_in: str) -> str:
         LOGGER.trace(f'filter_line("{line_in}")')
         token = line_in.split()
-        if Helper.is_date(token[0]):
+        if len(token) > 0 and Helper.is_date(token[0]):
             # Remove date from input line
             line_in = line_in.removeprefix(f'{token[0]} ')
 
-        line = line_in.replace(' ','&nbsp;')
+        line = line_in.replace(' ','&nbsp;').replace('\r','').replace('\n','')
         color_class = "text-white"
         if line.__contains__("ERROR") or line.__contains__("CRITICAL"):
             color_class = "text-danger"
