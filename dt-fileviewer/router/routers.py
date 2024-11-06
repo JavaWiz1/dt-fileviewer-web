@@ -1,6 +1,6 @@
 import pathlib
 
-from fastapi import APIRouter, Request, WebSocket, HTTPException, WebSocketDisconnect
+from fastapi import APIRouter, Request, WebSocket
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from loguru import logger as LOGGER
@@ -79,39 +79,9 @@ def system_info(request: Request):
 
 
 # == /websocket  ===============================================================================
-# @router.websocket('/ws/view/{textfile_id}/{start_pos}')
-# async def ws_view_file(textfile_id: str, start_loc: str, websocket: WebSocket):
-#     textfile_nm = cfg.text_files.get(textfile_id, 'DoesNotExist')
-#     LOGGER.info('')
-#     LOGGER.info(f'==> ws_view_file("{textfile_id}")')
-#     textfile = pathlib.Path(textfile_nm)
-#     LOGGER.info(f'- {textfile_id} - resolves to: {textfile}')
-#     if not textfile.exists():
-#         LOGGER.warning('- Does NOT exist.  Ignore.')
-#         await websocket.close()
-#         return
-#     try:
-#         start_pos = StartPos[start_loc.upper()]
-#     except KeyError:
-#         LOGGER.warning(f'- Invalid start position [{start_loc}]')
-#         await websocket.close()
-
-#     LOGGER.info('- Create tail_process')
-#     tail_process = TextFileHandler(textfile_nm)
-
-#     LOGGER.info('- Create connection manager')
-#     connection = WsConnectionManager(websocket=websocket,
-#                                     recv_handler=get_incoming_command,
-#                                     send_handler=tail_process.get_line,
-#                                     msg_type=WsConnectionManager.MsgType.TEXT)
-#     LOGGER.info('- Start  tail_process')
-#     await tail_process.start_tail(start_loc=start_pos)
-
-#     LOGGER.info('- handle websocket request.')
-#     await connection.handle_connection()
 
 @router.websocket("/ws/view/{textfile_id}")
-async def ws_view_file_with_filter(textfile_id: str, websocket: WebSocket):
+async def ws_view_file(textfile_id: str, websocket: WebSocket):
     textfile_nm = cfg.text_files.get(textfile_id, 'DoesNotExist')
     LOGGER.info('')
     LOGGER.info(f'==> ws_view_file("{textfile_id}")')
@@ -131,8 +101,12 @@ async def ws_view_file_with_filter(textfile_id: str, websocket: WebSocket):
                                     recv_handler=get_incoming_command,
                                     send_handler=tail_process.get_or_waitfor_line,
                                     msg_type=WsConnectionManager.MsgType.TEXT)
-    LOGGER.info('- Start  tail_process')
-    await tail_process.start_tail(start_loc=StartPos.TAIL, filter_text='')
+    
+    start_pos: str = websocket.query_params.get("start_pos")
+    filter_text: str = websocket.query_params.get("filter_text")    
+    LOGGER.info(f'- Start  tail_process.  StartPos: {start_pos}  Filter: {filter_text}')
+
+    await tail_process.start_tail(start_loc=StartPos[start_pos.upper()], filter_text=filter_text)
 
     LOGGER.info('- handle websocket request.')
     await connection.handle_connection()

@@ -1,6 +1,5 @@
 import asyncio
 import pathlib
-from typing import Dict
 from threading import Lock
 
 import aiofiles
@@ -25,7 +24,7 @@ class TextFileHandler():
         self._stop_requested = False
         self._paused: bool = False
 
-        self._tail_block_size: int = 4096
+        self._tail_block_size: int = 512
         self._buffer: list = []
         self._lock_buffer: Lock = Lock()
         self._tail_task: asyncio.Task = None
@@ -52,6 +51,7 @@ class TextFileHandler():
                 check_cnt += 1
                 LOGGER.warning(f'  waiting for current tail to end.  [{check_cnt}]')
                 await asyncio.sleep(.5)
+
         if self.in_progress:
             LOGGER.error(f'Tail in progress, cannot start new tail for [{self.filename.name}].')
             raise RuntimeError('Tail already in progress, stop_tail first!')
@@ -79,11 +79,10 @@ class TextFileHandler():
             else:
                 last_pos = 0
 
-            first_line = True
-            # try:
             # Loop looking for new textfile lines
+            first_line = True
             self._processing = True
-            LOGGER.info(f'- Begin processing - [{self.filename}]')
+            LOGGER.info(f'- Begin processing - [{self.filename}]  from: {start_loc.value}  filter: {filter_text}')
             LOGGER.info(f'                     Current size: {current_size}  Last size: {last_pos}  stop_requesed: {self._stop_requested}')
             while True and not self._stop_requested:
                 await asyncio.sleep(2)
@@ -97,7 +96,7 @@ class TextFileHandler():
                         LOGGER.info('Begin read loop...')
                         while new_line := await h_file.readline():
                             chk_line = new_line.replace('\n','').replace('\r','')
-                            LOGGER.trace(f'- line read: {chk_line}')
+                            LOGGER.debug(f'- line read: {chk_line}')
                             # If new line is just a blank line, new line char or empty string, skip it
                             if new_line in ["\n", "\r\n", ""] or (first_line and last_pos != 0):
                                 # LOGGER.debug(f"Skipping: [{chk_line}]")
@@ -105,7 +104,7 @@ class TextFileHandler():
                                 continue
                             if filter_text and filter_text not in new_line:
                                 # eat this line
-                                LOGGER.warning('filtering line.')
+                                LOGGER.debug('filtering line.')
                                 continue
                             
                             line = Helper.filter_line(new_line)

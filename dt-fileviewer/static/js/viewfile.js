@@ -1,10 +1,11 @@
 
 const view_form     = document.getElementById('viewfile_form');
-const log_window = document.getElementById('log_window');
 const cbo_textfile  = document.getElementById('cbo_text_filename');
-const txt_filter    = document.getElementById('filter_text');
 const cbo_start_pos = document.getElementById('cbo_start_pos');
+const txt_filter    = document.getElementById('filter_text');
 const btn_submit    = document.getElementById('submit_button')
+const log_window = document.getElementById('log_window');
+
 const NULL_FILE     = 'not_selected'
 
 // Initial connection
@@ -24,10 +25,14 @@ submit_button.addEventListener("click", (e) => {
     e.preventDefault();
 
     let text_file = cbo_textfile.value;
-    let uri = base_uri + text_file 
+    let uri = base_uri + text_file;
+    let query_string = '?start_pos='+cbo_start_pos.value;
+    if (txt_filter.value.trim().length) {
+        query_string += '&filter_text='+txt_filter.value.trim()
+    }
     console.log('submit button clicked.  file: ' + text_file)
 
-    reconnectws_file("ws://" + window.location.host + uri);
+    reconnectws_file("ws://" + window.location.host + uri + query_string);
     // Disable submit_button
     enable_button(btn_submit, false)
   });
@@ -35,14 +40,26 @@ submit_button.addEventListener("click", (e) => {
 
 cbo_textfile.addEventListener("change", function () {
     const selected_value = this.value;
+
     console.log('cbo_textfile changed to ' + selected_value)
     if (selected_value == NULL_FILE) {
         enable_button(btn_submit, false);
         uri = base_uri + cbo_textfile.value;
+        // Reset connection and clear window
         reconnectws_file('ws://' + window.location.host + uri);
     } else {
         enable_button(btn_submit, true);
     }
+});
+
+cbo_start_pos.addEventListener("change", function(){
+    console.log('cbo_start_pos changed')
+    enable_button(btn_submit, true);
+});
+
+txt_filter.addEventListener("change", function(){
+    console.log('txt_filter changed')
+    enable_button(btn_submit, true);
 });
 
 function enable_button(btn, state) {
