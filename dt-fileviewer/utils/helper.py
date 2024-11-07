@@ -102,11 +102,11 @@ class Helper:
             textfiles = cfg.text_files
 
         app_info['_textfiles'] = textfiles
+        app_info['_textfiles_defined'] = cfg.text_files_configured
+        app_info['_valid_file_name'] = False
         
         if for_dialog in ['viewfile']:
             app_info['_selected_textfile_nm'] = list(textfiles.values())[0]
-            app_info['_valid_file_name'] = False
-            app_info['_textfiles_defined'] = cfg.text_files_configured
             app_info['start_pos'] = cfg.start_pos
             app_info['filter_text'] = cfg.filter_text
 
