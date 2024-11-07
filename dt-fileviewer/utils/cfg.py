@@ -135,6 +135,10 @@ _KEYWORD_SECTIONS = {
     "console_ll":     {"section": "LOGS", "desc": "Log level for console logging"},
     "file_format":    {"section": "LOGS", "desc": "Log line format for console logging"},
     "console_format": {"section": "LOGS", "desc": "Log line format for console logging"},
+
+    "start_pos":      {"section": "RUNTIME", "desc": "Tail staring pos. (head-begin, center, tail-end)"},
+    "buffer_size":    {"section": "RUNTIME", "desc": "How many bytes to display on a tail (start position)"},
+    "filter_text":    {"section": "RUNTIME", "desc": "Filter lines containing filter text string"},
 }
 
 # ========================================================================================
@@ -151,6 +155,10 @@ uvicorn_ll  = _CONFIG.get(_get_section_desc('uvicorn_ll')[0],   "uvicorn_ll", fa
 console_ll  = _CONFIG.get(_get_section_desc('console_ll')[0],   "console_ll", fallback="INFO")
 file_format    = _CONFIG.get(_get_section_desc('file_format')[0], "file_format", fallback=lh.DEFAULT_FILE_LOGFMT)
 console_format = _CONFIG.get(_get_section_desc('console_format')[0], "console_format", fallback=lh.DEFAULT_DEBUG_LOGFMT)
+
+start_pos   = _CONFIG.get(_get_section_desc('start_pos')[0], "start_pos", fallback="tail")
+buffer_size = _CONFIG.getint(_get_section_desc('buffer_size')[0], "buffer_size", fallback=4096)
+filter_text = _CONFIG.get(_get_section_desc('filter_text')[0], "filter_text", fallback="")
 
 text_files: dict       = _get_textfile_section()
 text_files_configured: bool = True if len(text_files.keys()) > 0 else False

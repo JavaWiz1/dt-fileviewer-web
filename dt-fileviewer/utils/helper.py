@@ -63,15 +63,15 @@ class Helper:
     def get_app_info(for_dialog: str = '') -> dict:
         LOGGER.trace(f'get_app_info("{for_dialog}")')
 
+        app_info:dict = {}
+
         include_cpu  = True if for_dialog in ['system'] else False
         include_mem  = True if for_dialog in ['system'] else False
         include_disk = True if for_dialog in ['system'] else False
-
         sys_info = OSHelper.sysinfo(include_cpu=include_cpu, 
                                     include_memory=include_mem,
                                     include_disk=include_disk)
 
-        app_info:dict = {}
         app_info = sys_info['system'].copy()
         if include_cpu:
             app_info['cpu']= sys_info['cpu']
@@ -101,10 +101,13 @@ class Helper:
         else:
             textfiles = cfg.text_files
 
-        app_info['_textfiles'] = textfiles
-        app_info['_selected_textfile_nm'] = list(textfiles.values())[0]
-        app_info['_valid_file_name'] = False
-        app_info['_textfiles_defined'] = cfg.text_files_configured
+        if 'viewfile' in for_dialog:
+            app_info['_textfiles'] = textfiles
+            app_info['_selected_textfile_nm'] = list(textfiles.values())[0]
+            app_info['_valid_file_name'] = False
+            app_info['_textfiles_defined'] = cfg.text_files_configured
+            app_info['start_pos'] = cfg.start_pos
+            app_info['filter_text'] = cfg.filter_text
 
         LOGGER.debug(f'app_info:\n{app_info}')
         return app_info

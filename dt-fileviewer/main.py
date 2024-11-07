@@ -57,7 +57,7 @@ app.include_router(routers.router)
 @app.middleware('http')
 async def middleware_hook(request: Request, call_next):
     if '/static/' not in request.url.path:
-        LOGGER.warning(request.url.path)
+        # LOGGER.warning(request.url.path)
         params = '' if len(request.path_params) == 0 else request.path_params
         LOGGER.info(f'=> {request.client.host:13} [{request.method}] {request.url}  {request.query_params}  {params}')
 

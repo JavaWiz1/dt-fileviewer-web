@@ -27,18 +27,17 @@
             <div class="col-2">
                 <label for="cbo_start_pos" class="form-input-label">Start</label>
                 <select class="form-select-sm" id="cbo_start_pos" name="cbo_start_pos" aria-label="cbo_start_pos">
-                    <option value="head">Head</option>
-                    <option value="center">Center</option>
-                    <option value="tail" selected>Tail</option>
-                    <!-- <option value="{{ text_file_id }}" {{ 'selected' if appinfo._selected_textfile_nm==text_file_name }}>
-                    {{ text_file_name }}
-                    </option> -->
+                    {% for start_pos in ['head','center','tail'] %}
+                        <option value="{{ start_pos }}" {{ 'selected' if appinfo.start_pos==start_pos }}>
+                            {{ start_pos }}
+                        </option>
+                    {% endfor%}
                 </select>
             </div>
 
             <div class="col">
                 <label for="filter_text" class="form-input-label">Filter</label>
-                <input type="text" class="form-control-sm" id="filter_text" name="filter_text" value=""
+                <input type="text" class="form-control-sm" id="filter_text" name="filter_text" value="{{ appinfo.filter_text }}"
                     aria-label="filter_text">
                 <div class="invalid-feedback" id="filter_text_feedback"></div>
             </div>

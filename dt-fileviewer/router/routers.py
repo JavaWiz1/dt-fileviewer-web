@@ -39,16 +39,20 @@ def viewfile( request: Request):
     app_info['_selected_textfile_nm'] = textfile 
     return templates.TemplateResponse('viewfile.html', context={'request': request, 'appinfo': app_info}) 
     
-@router.post('/viewfile/{textfile}', response_class=HTMLResponse)
-async def select_textfile(textfile: str, request: Request):
-    app_info = Helper.get_app_info('viewfile')
-    form_data: FormData = await request.form()
-    LOGGER.warning(f'form_data: {form_data}')
-    app_info['_selected_textfile_nm'] = textfile
-    if pathlib.Path(textfile).exists() and textfile in app_info['_textfiles']:
-        app_info['_valid_file_name'] = True
+# @router.post('/viewfile/{textfile}', response_class=HTMLResponse)
+# async def select_textfile(textfile: str, request: Request):
+#     app_info = Helper.get_app_info('viewfile')
+    
+#     form_data: FormData = await request.form()
+#     LOGGER.warning(f'form_data: {form_data}')
+#     app_info['_selected_textfile_nm'] = textfile
+#     app_info['start_pos'] = form_data['start_pos']
+#     app_info['filter_text'] = form_data['filter_text']
 
-    return templates.TemplateResponse('viewfile.html', context={'request': request, 'appinfo': app_info}) 
+#     if pathlib.Path(textfile).exists() and textfile in app_info['_textfiles']:
+#         app_info['_valid_file_name'] = True
+
+#     return templates.TemplateResponse('viewfile.html', context={'request': request, 'appinfo': app_info}) 
 
 
 # == /configure  ===============================================================================

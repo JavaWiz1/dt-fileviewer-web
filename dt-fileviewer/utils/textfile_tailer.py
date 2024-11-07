@@ -7,6 +7,7 @@ from loguru import logger as LOGGER
 # from utils.helper import Helper, Message, MessageCommand
 from enum import Enum
 from utils.helper import Helper
+from utils import cfg as cfg
 
 class StartPos(Enum):
     HEAD = 1
@@ -24,7 +25,7 @@ class TextFileHandler():
         self._stop_requested = False
         self._paused: bool = False
 
-        self._tail_block_size: int = 512
+        self._tail_block_size: int = cfg.buffer_size
         self._buffer: list = []
         self._lock_buffer: Lock = Lock()
         self._tail_task: asyncio.Task = None
