@@ -101,8 +101,9 @@ class Helper:
         else:
             textfiles = cfg.text_files
 
-        if 'viewfile' in for_dialog:
-            app_info['_textfiles'] = textfiles
+        app_info['_textfiles'] = textfiles
+        
+        if for_dialog in ['viewfile']:
             app_info['_selected_textfile_nm'] = list(textfiles.values())[0]
             app_info['_valid_file_name'] = False
             app_info['_textfiles_defined'] = cfg.text_files_configured
