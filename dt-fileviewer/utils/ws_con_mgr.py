@@ -9,13 +9,14 @@ class WsConnectionManager():
         JSON  = 'json'
         TEXT  = 'text'
 
-    def __init__(self, websocket: WebSocket, recv_handler: callable, send_handler: callable, msg_type: MsgType = MsgType.TEXT):
+    def __init__(self, websocket: WebSocket, recv_handler: callable, send_handler: callable, r_msg_type: MsgType = MsgType.JSON, s_msg_type: MsgType = MsgType.TEXT):
         LOGGER.debug('ConnectionManager __init__()')
         self.websocket = websocket
         self.receiver  = recv_handler
+        self._r_msg_type = r_msg_type
         self.sender    = send_handler
+        self._s_msg_type = s_msg_type
         self._connected: bool = False
-        self._msg_type = msg_type
 
     @property
     def is_connected(self) -> bool:
@@ -68,18 +69,20 @@ class WsConnectionManager():
                     if self.websocket.client_state != WebSocketState.CONNECTED:
                         LOGGER.error(f'- Websocked not CONNECTED [{self.websocket.client_state}], cannot receive message')
                         break
-                    LOGGER.warning(f'- waiting for message [{self._msg_type}]')
+                    LOGGER.warning(f'- waiting for message [{self._r_msg_type}]')
                     # Can we make this smart (i.e. bytes, json, text)
-                    if self.MsgType == self.MsgType.BYTES:
+                    if self._r_msg_type == self.MsgType.BYTES:
                         message = await self.websocket.receive_bytes()
-                    elif self.MsgType == self.MsgType.JSON:
+                    elif self._r_msg_type == self.MsgType.JSON:
                         message = await self.websocket.receive_json()
-                    elif self._msg_type == self.MsgType.TEXT:
+                    elif self._r_msg_type == self.MsgType.TEXT:
                         message = await self.websocket.receive_text()
                     else:
-                        raise TypeError(f'Invalid MsgType [{self._msg_type}]')
-                    LOGGER.warning(f'- received message [{message}]')
+                        raise TypeError(f'Invalid MsgType [{self._r_msg_type}]')
+                    
+                    LOGGER.warning(f'- [{self._r_msg_type}] received message [{message}]')
                     await self.receiver(message, self)
+
                 except WebSocketDisconnect:
                     LOGGER.warning('- websocket disconneted.')
                     self._connected = False
@@ -102,14 +105,14 @@ class WsConnectionManager():
                     if self.websocket.client_state != WebSocketState.CONNECTED:
                         LOGGER.error(f'- Websocked not CONNECTED [{self.websocket.client_state}], cannot send message: {message}')
                         break
-                    if self.MsgType == self.MsgType.BYTES:
+                    if self._s_msg_type == self.MsgType.BYTES:
                         await self.websocket.send_bytes(message)
-                    elif self.MsgType == self.MsgType.JSON:
+                    elif self._s_msg_type == self.MsgType.JSON:
                         await self.websocket.send_json(message)
-                    elif self._msg_type == self.MsgType.TEXT:
+                    elif self._s_msg_type == self.MsgType.TEXT:
                         await self.websocket.send_text(message)
                     else:
-                        raise TypeError(f'Invalid MsgType [{self._msg_type}]')
+                        raise TypeError(f'Invalid MsgType [{self._s_msg_type}]')
         except WebSocketDisconnect:
             LOGGER.warning('- websocket disconneted.')
             self._connected = False
@@ -117,18 +120,19 @@ class WsConnectionManager():
             LOGGER.error(f'send_handler: {ex}')
 
         LOGGER.warning('send_handler()-exiting...')
-                
+
+    # Do we need this, can we just use self.send_handler() ?
     async def inject_message(self, message):
         LOGGER.debug(f'- inject_message: {message}')
         if self.websocket.client_state == WebSocketState.CONNECTED:
-            if self.MsgType == self.MsgType.BYTES:
+            if self._s_msg_type == self.MsgType.BYTES:
                 await self.websocket.send_bytes(message)
-            elif self.MsgType == self.MsgType.JSON:
+            elif self._s_msg_type == self.MsgType.JSON:
                 await self.websocket.send_json(message)
-            elif self._msg_type == self.MsgType.TEXT:
+            elif self._s_msg_type == self.MsgType.TEXT:
                 await self.websocket.send_text(message)
             else:
-                raise TypeError(f'Invalid MsgType [{self._msg_type}]')
+                raise TypeError(f'Invalid MsgType [{self._s_msg_type}]')
             
             return
         

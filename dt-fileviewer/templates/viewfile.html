@@ -21,7 +21,7 @@
             </div>
 
             <div class="col-1">
-                <button type="submit" class="btn btn-primary disabled" id="submit_button">View</button>
+                <button type="submit" class="btn btn-sm btn-primary disabled" id="submit_button">View</button>
             </div>
 
             <div class="col-2">
@@ -46,9 +46,12 @@
     </form>
 </div>
 
-<div id="log_window"
-    class="container-fluid font-monospace mb-4 lh-1 fs-6 overflow-scroll bg-dark text-white text-nowrap"
-    style="width: 98vw; height: calc(100vh - 160px);">
+<!-- contenteditable="true" -->
+
+<div id="log_window" tabindex="0"
+    class="container-fluid font-monospace mb-4 lh-1 fs-6 overflow-scroll bg-dark text-white text-nowrap 
+            border border-3 border-secondary"
+    style="width: 96vw; height: calc(100vh - 160px);">
     File content to be displayed here....
 </div>
 

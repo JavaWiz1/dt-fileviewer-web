@@ -86,8 +86,10 @@ def system_info(request: Request):
 
 @router.websocket("/ws/view/{textfile_id}")
 async def ws_view_file(textfile_id: str, websocket: WebSocket):
+    global tail_process
+
     textfile_nm = cfg.text_files.get(textfile_id, 'DoesNotExist')
-    LOGGER.info('')
+    LOGGER.info('') 
     LOGGER.info(f'==> ws_view_file("{textfile_id}")')
     textfile = pathlib.Path(textfile_nm)
     LOGGER.info(f'- {textfile_id} - resolves to: {textfile}')
@@ -104,8 +106,8 @@ async def ws_view_file(textfile_id: str, websocket: WebSocket):
     connection = WsConnectionManager(websocket=websocket,
                                     recv_handler=get_incoming_command,
                                     send_handler=tail_process.get_or_waitfor_line,
-                                    msg_type=WsConnectionManager.MsgType.TEXT)
-    
+                                    r_msg_type=WsConnectionManager.MsgType.JSON,
+                                    s_msg_type=WsConnectionManager.MsgType.TEXT)    
     start_pos: str = websocket.query_params.get("start_pos")
     filter_text: str = websocket.query_params.get("filter_text")    
     LOGGER.info(f'- Start  tail_process.  StartPos: {start_pos}  Filter: {filter_text}')
@@ -118,22 +120,21 @@ async def ws_view_file(textfile_id: str, websocket: WebSocket):
 
 
 async def get_incoming_command(message: dict, cm: WsConnectionManager):
-    print(f'- Received: {message}  {type(message)}')
+    global tail_process
+
+    LOGGER.warning(f'- Received: {message}  {type(message)} tail: {type(tail_process)}')
     cmd = message.get('command', None)
     if cmd is None:
         LOGGER.error('Null command received, ignored.')
         return
     
-    if cmd == 'filter':
-        parms = message.get('params', None)
-        LOGGER.info(f'Filter set to {parms}')
-    elif cmd == 'start_pos':
-        parms = message.get('params', None)
-        LOGGER.info(f'start_pos set to {parms}')
-    elif cmd == 'pause':
-        LOGGER.info('Pause requested')
+    if cmd == 'toggle-pause':
+        LOGGER.info('Toggle-Pause requested')
+        tail_process.paused = not tail_process.paused
+
     elif cmd == 'quit':
         await cm.shutdown()
+
     else:
-        await cm.inject_message(f'Received: {message}')        
+        await cm.inject_message(f'{message}')        
     

@@ -36,6 +36,7 @@ class TextFileHandler():
     
     @paused.setter
     def paused(self, state: bool):
+        LOGGER.warning(f'Paused set to: {state}')
         self._paused = state
 
     @property
@@ -86,10 +87,10 @@ class TextFileHandler():
             LOGGER.info(f'- Begin processing - [{self.filename}]  from: {start_loc.value}  filter: {filter_text}')
             LOGGER.info(f'                     Current size: {current_size}  Last size: {last_pos}  stop_requesed: {self._stop_requested}')
             while True and not self._stop_requested:
-                await asyncio.sleep(2)
+                await asyncio.sleep(1)
                 current_size = self.filename.stat().st_size
                 # Get next line if file has grown, and process is NOT paused
-                if current_size > last_pos and not self._paused:
+                if current_size > last_pos and not self.paused:
                     async with aiofiles.open(str(self.filename), mode='r') as h_file:
                         if last_pos > 0:
                             LOGGER.debug(f'- seek to {last_pos}')
@@ -132,13 +133,15 @@ class TextFileHandler():
         line = None
         LOGGER.debug(f'get_or_waitfor_line() -  buffer_size: {len(self._buffer)} - in_process: {self.in_progress}')
         while line is None and self.in_progress:
-            try:
-                with self._lock_buffer:
-                    line = self._buffer.pop(0)
-            except IndexError:
-                line = None
+            if not self.paused:  # Don't get line if we are paused.
+                try:
+                    with self._lock_buffer:
+                        line = self._buffer.pop(0)
+                except IndexError:
+                    line = None
+            if line is None:
                 await asyncio.sleep(.5)
-        # response = Message(MessageCommand.OUTPUT, line)
+
         return line
     
 

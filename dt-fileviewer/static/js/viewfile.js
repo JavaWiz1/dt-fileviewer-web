@@ -12,13 +12,9 @@ const NULL_FILE     = 'not_selected'
 let ws_file_vw = null
 let base_uri = '/ws/view/'
 let uri = base_uri + cbo_textfile.value;
+let log_window_paused = false
 
-// if (cbo_textfile.value == NULL_FILE) {
-//     console.log('No file selected, ignore request...')
-//     log_window.innerHTML = ''
-// } else {
-//     reconnectws_file('ws://' + window.location.host + uri)
-// }
+
 reconnectws_file('ws://' + window.location.host + uri)
 
 submit_button.addEventListener("click", (e) => {
@@ -35,7 +31,8 @@ submit_button.addEventListener("click", (e) => {
     reconnectws_file("ws://" + window.location.host + uri + query_string);
     // Disable submit_button
     enable_button(btn_submit, false)
-  });
+    set_paused_indicator(false)
+});
   
 
 cbo_textfile.addEventListener("change", function () {
@@ -61,6 +58,43 @@ txt_filter.addEventListener("change", function(){
     console.log('txt_filter changed')
     enable_button(btn_submit, true);
 });
+
+log_window.addEventListener('dblclick', function(event) {
+    // Code to execute on double-click
+    console.log('Double-click detected!');
+    // send toggle pause command
+    const cmd={'command': 'toggle-pause'};
+    ws_file_vw.send(JSON.stringify(cmd));
+    log_window_paused = !log_window_paused
+    set_paused_indicator(log_window_paused);
+  });
+
+log_window.addEventListener('keydown', function (event) {
+    console.log('keypress: ' + event.key);
+    var ch = event.key;
+    if (ws_file_vw != null) {
+        if (event.key == "Enter") {
+            ch = '<br>';
+        } else if (event.key == "Backspace") {
+            log_window.innerHTML = log_window.innerHTML.slice(0, -1);
+            ch = ''
+        } else if (event.key.length > 1) {
+            ch = '';
+        }
+        log_window.innerHTML += ch;
+    }
+});
+
+function set_paused_indicator(pause_state) {
+    let cls = log_window.getAttribute('class');
+    if (pause_state) {
+        cls = cls.replace('border-secondary', 'border-danger');
+    } else {
+        cls = cls.replace('border-danger', 'border-secondary');
+    }
+    log_window.setAttribute('class', cls);
+};
+
 
 function enable_button(btn, state) {
     console.log('ENABLE ' + btn.id + ' ' + state)
