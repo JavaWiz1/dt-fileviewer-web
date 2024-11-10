@@ -3,19 +3,6 @@ from dt_tools.os.os_helper import OSHelper
 from loguru import logger as LOGGER
 from utils import cfg as cfg
 
-# class MessageCommand:
-#     OUTPUT = 'output'
-#     PAUSE  = 'pause'
-#     QUIT   = 'quit'
-
-# @dataclass
-# class Message():
-#     command: MessageCommand
-#     parm: str
-
-#     def to_dict(self) -> dict:
-#         return {'command': self.command, 'parm': self.parm}
-    
 
 class Helper:
     _UNKNOWN_KEY = 'not_selected'
@@ -84,15 +71,13 @@ class Helper:
             sys_info['memory']['swap_free']  = OSHelper.bytes_to_printformat(sys_info['memory']['swap_free'])
             app_info['memory']= sys_info['memory']
         if include_disk:
-            # for d_entry in sys_info["disk"]["partitions"]:
             for idx in range(len(sys_info['disk']['partitions'])):
                 d_entry = sys_info['disk']['partitions'][idx]
-                LOGGER.warning(d_entry)
                 if len(d_entry['fstype']) > 0:
                     d_entry['total'] = OSHelper.bytes_to_printformat(d_entry['total'])
                     d_entry['used'] = OSHelper.bytes_to_printformat(d_entry['used'])
                     d_entry['free'] = OSHelper.bytes_to_printformat(d_entry['free'])
-                LOGGER.warning(sys_info['disk']['partitions'][idx])
+                # LOGGER.warning(sys_info['disk']['partitions'][idx])
             app_info['disk']= sys_info['disk']
         
         if Helper._UNKNOWN not in cfg.text_files.values():

@@ -28,23 +28,22 @@ async def lifespan(app: FastAPI):
         cfg.create_new_config()
         Helper.reload_configuration()
     
-    LOGGER.success('>> Startup configuration complete.')
     if not cfg.text_files_configured:
         LOGGER.warning('- No files defined.')
     else:
-        LOGGER.info(f'- {len(cfg.text_files)} files defined.')
+        LOGGER.info(f'{len(cfg.text_files)} files defined.')
         LOGGER.info('')
         LOGGER.info('  Logfile ID   Location')
-        LOGGER.info('  ------------ -----------------------------------')
+        LOGGER.info('  ------------ ---------------------------------------------------------------')
         for key, val in cfg.text_files.items():
-            LOGGER.info(f'  {key:12} {val}')
+            LOGGER.info(f'  {key:13} {val}')
 
     # Only prints if debug is enabled.
     LOGGER.debug('')
     LOGGER.debug('DEBUG is enabled.')
 
     LOGGER.info('')
-    LOGGER.info('Waiting for connection...')
+    LOGGER.success('>> Waiting for connection...')
     yield
 
     # Shutdown/Clean up code

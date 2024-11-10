@@ -1,3 +1,4 @@
+import asyncio
 import pathlib
 
 from fastapi import APIRouter, Request, WebSocket
@@ -7,10 +8,9 @@ from loguru import logger as LOGGER
 from starlette.datastructures import URL, FormData
 from utils import cfg as cfg
 from utils.helper import Helper
+from utils.textfile_tailer import StartPos, TextFileHandler
 from utils.validation import Validation as Validator
 from utils.ws_con_mgr import WsConnectionManager
-from utils.textfile_tailer import TextFileHandler, StartPos
-
 
 router = APIRouter()
 
@@ -19,7 +19,6 @@ templates.env.globals['URL'] = URL
 
 connection: WsConnectionManager = None
 tail_process: TextFileHandler = None
-
 
 
 # == /root  ===============================================================================
@@ -39,22 +38,6 @@ def viewfile( request: Request):
     app_info['_selected_textfile_nm'] = textfile 
     return templates.TemplateResponse('viewfile.html', context={'request': request, 'appinfo': app_info}) 
     
-# @router.post('/viewfile/{textfile}', response_class=HTMLResponse)
-# async def select_textfile(textfile: str, request: Request):
-#     app_info = Helper.get_app_info('viewfile')
-    
-#     form_data: FormData = await request.form()
-#     LOGGER.warning(f'form_data: {form_data}')
-#     app_info['_selected_textfile_nm'] = textfile
-#     app_info['start_pos'] = form_data['start_pos']
-#     app_info['filter_text'] = form_data['filter_text']
-
-#     if pathlib.Path(textfile).exists() and textfile in app_info['_textfiles']:
-#         app_info['_valid_file_name'] = True
-
-#     return templates.TemplateResponse('viewfile.html', context={'request': request, 'appinfo': app_info}) 
-
-
 # == /configure  ===============================================================================
 @router.get('/configure', response_class=HTMLResponse)
 def configure(request: Request):
@@ -65,7 +48,6 @@ def configure(request: Request):
 async def configure_update(request: Request):
     app_info = Helper.get_app_info('configure')
     form_data: FormData = await request.form()
-    # LOGGER.warning(f'form_data: {form_data}')
     valid, changes_detected, errors, new_app_info = Validator.validate_form(app_info, form_data)
     if valid and changes_detected:
         LOGGER.info('Attempt to update configuration...')
@@ -89,34 +71,44 @@ async def ws_view_file(textfile_id: str, websocket: WebSocket):
     global tail_process
 
     textfile_nm = cfg.text_files.get(textfile_id, 'DoesNotExist')
-    LOGGER.info('') 
+    LOGGER.info('='*40) 
     LOGGER.info(f'==> ws_view_file("{textfile_id}")')
     textfile = pathlib.Path(textfile_nm)
     LOGGER.info(f'- {textfile_id} - resolves to: {textfile}')
+        
     if not textfile.exists():
         LOGGER.warning('- Does NOT exist.  Ignore.')
         await websocket.close()
         return
     
+    if tail_process is not None and tail_process.in_progress:
+        tail_process.stop_tail()
+        while tail_process.in_progress:
+            LOGGER.info(f'- Waiting for prior tail [{tail_process.filename.name}] to complete.')
+            await asyncio.sleep(.25)
 
-    LOGGER.info('- Create tail_process')
+    LOGGER.debug('- Create tail_process')
     tail_process = TextFileHandler(textfile_nm)
-
-    LOGGER.info('- Create connection manager')
+    LOGGER.debug('- Create connection manager')
     connection = WsConnectionManager(websocket=websocket,
                                     recv_handler=get_incoming_command,
                                     send_handler=tail_process.get_or_waitfor_line,
                                     r_msg_type=WsConnectionManager.MsgType.JSON,
-                                    s_msg_type=WsConnectionManager.MsgType.TEXT)    
+                                    s_msg_type=WsConnectionManager.MsgType.TEXT)   
+     
     start_pos: str = websocket.query_params.get("start_pos")
     filter_text: str = websocket.query_params.get("filter_text")    
-    LOGGER.info(f'- Start  tail_process.  StartPos: {start_pos}  Filter: {filter_text}')
+    LOGGER.info(f'- Start  tail_process [{tail_process.filename.name}].  StartPos: {start_pos}  Filter: {filter_text}')
 
     await tail_process.start_tail(start_loc=StartPos[start_pos.upper()], filter_text=filter_text)
 
     LOGGER.info('- handle websocket request.')
-    await connection.handle_connection()
-    tail_process.stop_tail()
+    try:
+        await connection.handle_connection()
+    except Exception as ex:
+        LOGGER.error(f'handle_connection error: {ex}')
+    finally:
+        tail_process.stop_tail()
 
 
 async def get_incoming_command(message: dict, cm: WsConnectionManager):

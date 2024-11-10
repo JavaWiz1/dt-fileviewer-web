@@ -58,7 +58,7 @@ class Validation:
         errors = {}
         new_app_info: dict = app_info.copy()
         textfiles: dict = new_app_info['_textfiles'].copy()
-        LOGGER.warning(f'validate_upd_entries() - {len(textfiles)} entries.')        
+        LOGGER.info(f'validate_upd_entries() - {len(textfiles)} entries.')        
         entry: dict = {}
         for form_text_fileid in form_data.keys():
             if form_text_fileid.startswith('upd_') and form_text_fileid.endswith('_logloc'):  # Only the update entries
@@ -99,7 +99,7 @@ class Validation:
         Returns:
             Tuple[bool, Dict[str, str], Dict[str, str]]: rc, chgs_detected, errors, new_app_info
         """
-        LOGGER.warning(f'validate_del_entries() - {len(app_info["_textfiles"])} entries.')
+        LOGGER.info(f'validate_del_entries() - {len(app_info["_textfiles"])} entries.')
         valid = True
         changes_detected = False
         errors = {}
@@ -136,7 +136,7 @@ class Validation:
         Returns:
             Tuple[bool, Dict[str, str], Dict[str, str]]: rc, chgs_detected, errors, new_app_info
         """
-        LOGGER.warning(f'validate_new_entry("{id}", "{loc}") - {len(app_info["_textfiles"])} entries.')        
+        LOGGER.info(f'validate_new_entry("{id}", "{loc}") - {len(app_info["_textfiles"])} entries.')        
         valid = True
         changes_detected = False
         new_app_info = app_info.copy()

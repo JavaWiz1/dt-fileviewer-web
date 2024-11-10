@@ -16,7 +16,16 @@ class StartPos(Enum):
 
         
 class TextFileHandler():
+    
+    def __new__(cls, filename):
+        if not hasattr(cls, 'instance'):
+            LOGGER.debug('CREATING initial TextFileHandler instance.')
+            cls.instance = super(TextFileHandler, cls).__new__(cls)
+
+        return cls.instance
+
     def __init__(self, filename):
+        LOGGER.debug('TextFileHandler() __init__')
         self.filename = pathlib.Path(filename)
         if not self.filename.exists():
             raise FileNotFoundError(f'{filename} not found.')
@@ -44,31 +53,19 @@ class TextFileHandler():
         return self._processing
 
     async def start_tail(self, start_loc: StartPos = StartPos.TAIL, filter_text: str = None ):
-        LOGGER.info(f'start_tail(start_loc={start_loc}, filter_text={filter_text})')
-        if self.in_progress:
-            check_cnt = 0
-            LOGGER.warning('- tail in progress, send stop signal...')
-            self.stop_tail()
-            while self.in_progress and check_cnt < 5:
-                check_cnt += 1
-                LOGGER.warning(f'  waiting for current tail to end.  [{check_cnt}]')
-                await asyncio.sleep(.5)
+        LOGGER.debug(f'start_tail(start_loc={start_loc}, filter_text={filter_text})')
 
         if self.in_progress:
             LOGGER.error(f'Tail in progress, cannot start new tail for [{self.filename.name}].')
             raise RuntimeError('Tail already in progress, stop_tail first!')
         
         self._tail_task = asyncio.create_task(self._tail_file(start_loc, filter_text))
-        # Do we need this or will it block?
-        # self._tail_task.add_done_callback(self.stop_tail)
-        LOGGER.warning('tail_task STARTED.')
-
 
     async def _tail_file(self, start_loc: StartPos = StartPos.TAIL, filter_text: str = None ):
         if self._processing:
             raise RuntimeError('Tail already in progress, stop_tail first!')
         
-        LOGGER.debug(f'_tail_file(start_loc={start_loc}, filter_text={filter_text})')
+        LOGGER.info(f'_tail_task started for {self.filename.name}')
         # Determine starting position
         try:
             current_size = self.filename.stat().st_size
@@ -86,7 +83,7 @@ class TextFileHandler():
             self._processing = True
             LOGGER.info(f'- Begin processing - [{self.filename}]  from: {start_loc.value}  filter: {filter_text}')
             LOGGER.info(f'                     Current size: {current_size}  Last size: {last_pos}  stop_requesed: {self._stop_requested}')
-            while True and not self._stop_requested:
+            while not self._stop_requested:
                 await asyncio.sleep(1)
                 current_size = self.filename.stat().st_size
                 # Get next line if file has grown, and process is NOT paused
@@ -96,23 +93,28 @@ class TextFileHandler():
                             LOGGER.debug(f'- seek to {last_pos}')
                             await h_file.seek(last_pos)
                         LOGGER.info('Begin read loop...')
-                        while new_line := await h_file.readline():
+                        while not self._stop_requested:
+                            new_line = await h_file.readline()
                             chk_line = new_line.replace('\n','').replace('\r','')
                             LOGGER.debug(f'- line read: {chk_line}')
                             # If new line is just a blank line, new line char or empty string, skip it
                             if new_line in ["\n", "\r\n", ""] or (first_line and last_pos != 0):
-                                # LOGGER.debug(f"Skipping: [{chk_line}]")
                                 first_line = False
                                 continue
                             if filter_text and filter_text not in new_line:
                                 # eat this line
-                                LOGGER.debug('filtering line.')
+                                LOGGER.debug(f'- filtering line: {new_line}')
                                 continue
                             
                             line = Helper.filter_line(new_line)
                             with self._lock_buffer:
                                 self._buffer.append(line)
-                                # LOGGER.debug(f'- buffer size: {len(self._buffer)}')
+                            if len(self._buffer) > 50:
+                                while len(self._buffer) > 25 and not self._stop_requested:
+                                    # Don't let buffer get too far behind
+                                    if not self.paused:
+                                        LOGGER.info(f'- waiting for buffer to empty [{len(self._buffer)}]')
+                                    await asyncio.sleep(2)
 
                     last_pos = current_size
 
@@ -120,10 +122,10 @@ class TextFileHandler():
             LOGGER.exception(repr(ex))
         
         finally:
-            LOGGER.success(f'tail file completed for {self.filename}')
+            LOGGER.success(f'** tail file completed for {self.filename}')
+            self._processing = False
             self._stop_requested = False
             self._paused = False
-            self._processing = False
             await asyncio.sleep(.5)
             with self._lock_buffer:
                 self._buffer = []
@@ -146,5 +148,6 @@ class TextFileHandler():
     
 
     def stop_tail(self):
+        LOGGER.warning('stop tail requested.')
         self._stop_requested = True
 

@@ -10,6 +10,7 @@ from loguru import logger as LOGGER
 TEXTFILES_SECTION = 'TEXTFILES'
 
 def _get_available_port(low_port: int, high_port: int) -> int:
+    LOGGER.debug(f'Checking port range {low_port} --> {high_port} for closed (i.e. available) port.')
     for target_port in range(low_port, high_port+1):
         if not nh.is_port_open('localhost', target_port):
             LOGGER.info(f'Port {target_port} identified as being available for hosting.')

@@ -23,7 +23,7 @@ class WsConnectionManager():
         return self._connected
 
     async def handle_connection(self):
-        LOGGER.debug('ConnectionManager - handler() ')
+        LOGGER.info('ConnectionManager.handler() - starting')
         LOGGER.debug('- create consumer and producer')
         consumer_task = asyncio.create_task(self.receive_handler(), name='consumer_task')
         producer_task = asyncio.create_task(self.send_handler(), name='producer_task')
@@ -32,11 +32,12 @@ class WsConnectionManager():
         LOGGER.debug('- accept websocket connection')
         await self.websocket.accept()
         self._connected = True
-        LOGGER.debug('- wait for consumer/producer to terminate')
+        LOGGER.info('- wait for consumer/producer to terminate')
         done, pending = await asyncio.wait(
             tasks,
             return_when=asyncio.FIRST_COMPLETED,
         )
+
         LOGGER.info('WebSocket tasks terminating...')
         for task in tasks:
             LOGGER.debug(f'Task: {task.get_name()}  state: {task._state}')
@@ -44,9 +45,9 @@ class WsConnectionManager():
         for task in pending:
             LOGGER.debug(f'task in CANCEL: {task.get_name()}')
             task.cancel()
-        
+
         loop_cnt = 0
-        LOGGER.info(f'Pending Tasks [{len(pending)}]:')
+        LOGGER.info(f'Pending Tasks [{len(pending)}]')
         still_pending = list(pending)
         while len(still_pending) > 0 and loop_cnt < 20:
             loop_cnt += 1
@@ -59,17 +60,17 @@ class WsConnectionManager():
                 await asyncio.sleep(.25)
 
         self._connected = False
-        LOGGER.info('handler()-exiting...')
+        LOGGER.success('ConnectionManager.handler() - exiting...')
 
     async def receive_handler(self):
         LOGGER.debug('ConnectionManager - receive_handler() triggered.')
         try:
-            while True and self.is_connected:
+            while self.is_connected:
                 try:
                     if self.websocket.client_state != WebSocketState.CONNECTED:
                         LOGGER.error(f'- Websocked not CONNECTED [{self.websocket.client_state}], cannot receive message')
                         break
-                    LOGGER.warning(f'- waiting for message [{self._r_msg_type}]')
+                    LOGGER.debug(f'- waiting for message [{self._r_msg_type}]')
                     # Can we make this smart (i.e. bytes, json, text)
                     if self._r_msg_type == self.MsgType.BYTES:
                         message = await self.websocket.receive_bytes()
@@ -80,7 +81,7 @@ class WsConnectionManager():
                     else:
                         raise TypeError(f'Invalid MsgType [{self._r_msg_type}]')
                     
-                    LOGGER.warning(f'- [{self._r_msg_type}] received message [{message}]')
+                    LOGGER.warning(f'- received message  [{self._r_msg_type}]: {message}')
                     await self.receiver(message, self)
 
                 except WebSocketDisconnect:
@@ -92,7 +93,7 @@ class WsConnectionManager():
         except Exception as ex:
             LOGGER.error(f'receive_handler: {ex}')
 
-        LOGGER.info('receive_handler()-exiting...')
+        LOGGER.debug('receive_handler()-exiting...')
 
     async def send_handler(self):
         LOGGER.debug('ConnectionManager - send_handler() triggered.')
@@ -119,7 +120,7 @@ class WsConnectionManager():
         except Exception as ex:
             LOGGER.error(f'send_handler: {ex}')
 
-        LOGGER.warning('send_handler()-exiting...')
+        LOGGER.debug('send_handler()-exiting...')
 
     # Do we need this, can we just use self.send_handler() ?
     async def inject_message(self, message):
@@ -139,6 +140,6 @@ class WsConnectionManager():
         LOGGER.error(f'- Websocked not CONNECTED [{self.websocket.client_state}], cannot inject message: {message}')
 
     async def shutdown(self):
-        LOGGER.debug('Shutdown request received.')
+        LOGGER.warning('Shutdown request received.')
         await self.websocket.close()
-        LOGGER.warning('shutdown()-exiting...')
+        LOGGER.success('shutdown()-exiting...')

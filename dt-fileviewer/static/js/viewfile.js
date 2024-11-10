@@ -1,10 +1,17 @@
 
+const ButtonState = Object.freeze({
+    NORMAL:   Symbol(""),
+    ACTIVE:   Symbol("active"),
+    DISABLED: Symbol("disabled")
+});
+
 const view_form     = document.getElementById('viewfile_form');
 const cbo_textfile  = document.getElementById('cbo_text_filename');
 const cbo_start_pos = document.getElementById('cbo_start_pos');
 const txt_filter    = document.getElementById('filter_text');
 const btn_submit    = document.getElementById('submit_button')
-const log_window = document.getElementById('log_window');
+const btn_pause     = document.getElementById('pause_button')
+const log_window   = document.getElementById('log_window');
 
 const NULL_FILE     = 'not_selected'
 
@@ -30,44 +37,52 @@ submit_button.addEventListener("click", (e) => {
 
     reconnectws_file("ws://" + window.location.host + uri + query_string);
     // Disable submit_button
-    enable_button(btn_submit, false)
+    enable_button(btn_submit, ButtonState.DISABLED)
+    enable_button(btn_pause, ButtonState.NORMAL)
     set_paused_indicator(false)
 });
   
+pause_button.addEventListener("click", (e) => {
+    log_window_paused = !log_window_paused
+    const cmd={'command': 'toggle-pause'};
+    ws_file_vw.send(JSON.stringify(cmd));
+    set_paused_indicator(log_window_paused);
+    if (log_window_paused) {
+        enable_button(btn_pause, ButtonState.ACTIVE)
+    } else {
+        enable_button(btn_pause, ButtonState.NORMAL)
+    }
+});
 
 cbo_textfile.addEventListener("change", function () {
     const selected_value = this.value;
 
     console.log('cbo_textfile changed to ' + selected_value)
     if (selected_value == NULL_FILE) {
-        enable_button(btn_submit, false);
+        set_paused_indicator(false)
+        enable_button(btn_submit, ButtonState.DISABLED);
+        enable_button(btn_pause, ButtonState.DISABLED)
         uri = base_uri + cbo_textfile.value;
         // Reset connection and clear window
         reconnectws_file('ws://' + window.location.host + uri);
     } else {
-        enable_button(btn_submit, true);
+        enable_button(btn_submit, ButtonState.NORMAL);
+        enable_button(btn_pause, ButtonState.NORMAL)
     }
 });
 
 cbo_start_pos.addEventListener("change", function(){
     console.log('cbo_start_pos changed')
-    enable_button(btn_submit, true);
+    //TODO check not_selected
+    enable_button(btn_submit, ButtonState.NORMAL);
 });
 
 txt_filter.addEventListener("change", function(){
     console.log('txt_filter changed')
-    enable_button(btn_submit, true);
+    //TODO check not_selected
+    enable_button(btn_submit, ButtonState.NORMAL);
 });
 
-log_window.addEventListener('dblclick', function(event) {
-    // Code to execute on double-click
-    console.log('Double-click detected!');
-    // send toggle pause command
-    const cmd={'command': 'toggle-pause'};
-    ws_file_vw.send(JSON.stringify(cmd));
-    log_window_paused = !log_window_paused
-    set_paused_indicator(log_window_paused);
-  });
 
 log_window.addEventListener('keydown', function (event) {
     console.log('keypress: ' + event.key);
@@ -82,8 +97,25 @@ log_window.addEventListener('keydown', function (event) {
             ch = '';
         }
         log_window.innerHTML += ch;
+        log_window.scrollIntoView({ behavior: "smooth", block: "end" })
+        log_window.scrollTop = log_window.scrollHeight;
     }
 });
+
+function limit_file_buffer() {
+    if (log_window.innerHTML.length > 5242080) {
+        let line_cnt = 0;
+        let pos = 0;
+        while (line_cnt < 10 && pos >= 0) {
+            pos = log_window.innerHTML.indexOf('\n', pos);
+            line_cnt += 1;
+        };
+        if (pos > 0) {
+            console.log('limit_file_buffer...')
+            log_window.innerHTML = log_window.innerHTML.slice(pos+1)
+        }
+    }
+};
 
 function set_paused_indicator(pause_state) {
     let cls = log_window.getAttribute('class');
@@ -93,26 +125,44 @@ function set_paused_indicator(pause_state) {
         cls = cls.replace('border-danger', 'border-secondary');
     }
     log_window.setAttribute('class', cls);
+    log_window_paused = pause_state
 };
 
 
 function enable_button(btn, state) {
-    console.log('ENABLE ' + btn.id + ' ' + state)
+    console.log('ENABLE ' + btn.id + ' ' + state.value)
     let cls = btn.getAttribute('class');
     console.log('- ' + cls)
-    if (state == true) {
-        // Enable - remove disabled attribute
-        cls = cls.replace('disabled', '');
-        btn.setAttribute('class', cls);
-    } else {
-        // Disable, add disabled attribute (if does not exist)
-        if (! cls.includes('disabled')) {
-            cls += ' disabled';
-            btn.setAttribute('class', cls);
-        }
-    }
+    switch (state) {
+        case ButtonState.NORMAL:
+            cls = cls.replace('disabled', '');
+            btn.setAttribute('aria-pressed', false)
+            break;
+        case ButtonState.ACTIVE:
+            cls = cls.replace('disabled', '');    
+            btn.setAttribute('aria-pressed', true)
+            break;
+        case ButtonState.DISABLED:
+            if (! cls.includes('disabled')) 
+                cls += ' disabled';
+            break;
+    };
+    btn.setAttribute('class', cls);
+
+    // if (state == true) {
+    //     // Enable - remove disabled attribute
+    //     cls = cls.replace('disabled', '');
+    //     btn.setAttribute('class', cls);
+    // } else {
+    //     // Disable, add disabled attribute (if does not exist)
+    //     if (! cls.includes('disabled')) {
+    //         cls += ' disabled';
+    //         btn.setAttribute('class', cls);
+    //     }
+    // }
     console.log('- ' + cls)
 }
+
 
 function reconnectws_file(newEndpoint) {
     console.log('Reconnectws_file()');
@@ -153,6 +203,7 @@ function reconnectws_file(newEndpoint) {
         var log_window = document.getElementById('log_window')
         // Handle incoming messages
         log_window.innerHTML += event.data + "\n";
+        limit_file_buffer();
         // log_obj.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" })
         log_window.scrollIntoView({ behavior: "smooth", block: "end" })
         log_window.scrollTop = log_window.scrollHeight;
